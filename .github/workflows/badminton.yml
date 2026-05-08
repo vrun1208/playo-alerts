@@ -1,0 +1,48 @@
+name: Badminton Game Checker
+
+on:
+  schedule:
+    # Runs daily at 11:00 AM IST (5:30 AM UTC)
+    - cron: "30 5 * * *"
+    # Runs daily at 1:00 PM IST (7:30 AM UTC)
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+    inputs:
+      start_time:
+        description: "Start time (HH:MM, 24hr IST)"
+        default: "19:00"
+      end_time:
+        description: "End time (HH:MM, 24hr IST)"
+        default: "20:00"
+
+jobs:
+  check-games:
+    runs-on: ubuntu-latest
+
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Run game check
+        run: |
+          uv run src/finder.py \
+            --lat 12.9784 \
+            --lng 77.6408 \
+            --radius 7 \
+            --sport SP5 \
+            --timezone "Asia/Kolkata" \
+            --start-time "${{ github.event.inputs.start_time || '19:00' }}" \
+            --end-time "${{ github.event.inputs.end_time || '20:00' }}" \
+            --telegram
