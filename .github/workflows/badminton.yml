@@ -1,4 +1,4 @@
-name: Badminton Game Checker
+name: Badminton Alerts System
 
 on:
   schedule:
@@ -8,6 +8,15 @@ on:
     - cron: "30 7 * * *"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Select mode to run"
+        required: true
+        default: "checker"
+        type: choice
+        options:
+          - checker
+          - bot_listener
+          - both
       start_time:
         description: "Start time (HH:MM, 24hr IST)"
         default: "19:00"
@@ -16,12 +25,12 @@ on:
         default: "20:00"
 
 jobs:
-  check-games:
+  game-checker:
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.mode == 'checker' || github.event.inputs.mode == 'both'
 
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
     steps:
       - name: Checkout code
@@ -35,7 +44,7 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Run game check
+      - name: Run game checker
         run: |
           uv run src/finder.py \
             --lat 12.9784 \
@@ -46,3 +55,27 @@ jobs:
             --start-time "${{ github.event.inputs.start_time || '19:00' }}" \
             --end-time "${{ github.event.inputs.end_time || '20:00' }}" \
             --telegram
+
+  bot-listener:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'bot_listener' || github.event.inputs.mode == 'both')
+    timeout-minutes: 60
+
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Run bot listener
+        run: uv run src/bot_listener.py
+
