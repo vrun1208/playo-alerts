@@ -1,0 +1,29 @@
+{
+  "runtime": "python@3.12",
+  "builds": [
+    {
+      "src": "api/*.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/health",
+      "dest": "api/health.py"
+    },
+    {
+      "src": "/api/telegram",
+      "dest": "api/telegram_webhook.py"
+    },
+    {
+      "src": "/api/check-slots",
+      "dest": "api/check_slots.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/check-slots",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
